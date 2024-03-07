@@ -1,105 +1,166 @@
 package m3.uf5.pt1;
 
+import java.io.Serializable;
+import java.text.SimpleDateFormat;
 import java.util.ArrayDeque;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Deque;
+import java.util.Iterator;
+import java.util.Objects;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.WordUtils;
 
-public class Entrada extends Publicacio implements Comparable<Entrada>{
+public class Entrada extends Publicacio implements Comparable<Entrada>, Serializable {
 
-		public static final String SEPARADOR = "|";
-		public static final String NOT_PROVIDED = "NA";
-		private String titol;
-		private Deque<Comentari> comentaris = new ArrayDeque<>();
-		
-		public Entrada(Usuari usuari, String text, String titol) {
-			super(usuari, text);
-			this.titol = titol;
-		}
+    private static final long serialVersionUID = 1L;
+    public static final String SEPARADOR = "|";
+    public static final String NOT_PROVIDED = "NA";
+    private String titol;
+    private Deque<Comentari> comentaris = new ArrayDeque<>();
 
-		protected String getTitol() {
-			return titol;
-		}
+    public Entrada(Usuari usuari, String titol, String text) throws Exception {
+        super(usuari, text);
+        if (titol == null || "".equals(titol)) {
+            throw new Exception("Cal un títol");
+        }
+        this.titol = titol;
 
-		protected void setTitol(String titol) {
-			this.titol = titol;
-		}
+    }
 
-		protected Deque<Comentari> getComentaris() {
-			return comentaris;
-		}
+    protected String getTitol() {
+        return titol;
+    }
 
-		protected void setComentaris(Deque<Comentari> comentaris) {
-			this.comentaris = comentaris;
-		}
-		
-		//arreglar
-		public void afegirComentari(Usuari usuari, String text, int valoracio) {
-		    if (usuari != null && text != null && comentaris.contains(valoracio)) {
-		        Comentari comentari = new Comentari(usuari, text, valoracio);
-		        comentaris.add(comentari);
-		    }
-		}
-		
-		public String valoracioMitjaEntrada() {
-		    if (comentaris.isEmpty()) {
-		        return Entrada.NOT_PROVIDED;
-		    }
-		    int sum = 0;
-		    int count = 0;
-		    for (Comentari comentari : comentaris) {
-		        sum += comentari.getValoracio();
-		        count++;
-		    }
-		    double average = (double) sum / count;
-		    return String.format("%.1f", average);
-		}
-		
-		
-		//arreglar
-		public int totalValoracionsPerValor(int valor) {
-		    if (!comentaris.contains(valor)) {
-		        throw new IllegalArgumentException("La valoració indicada no és vàlida.");
-		    }
-		    int count = 0;
-		    for (Comentari comentari : comentaris) {
-		        if (comentari.getValoracio() == valor) {
-		            count++;
-		        }
-		    }
+    protected void setTitol(String titol) {
+        this.titol = titol;
+    }
 
-		    return count;
-		}
+    protected Deque<Comentari> getComentaris() {
+        return comentaris;
+    }
 
-		@Override
-		public String imprimirPublicacio(int ident, int width) {
-//		    StringBuilder sb = new StringBuilder();
-//
-//		    String dateString = WordUtils.wrap(this.data.toString(), width);
-//		    String authorString = WordUtils.wrap(this.autor.getNom(), width);
-//		    String ratingsString = WordUtils.wrap("Valoracions: " + this.valoracioTotal(), width);
-//
-//		    int col1Width = (width - ident) / 3;
-//		    int col2Width = 2 * col1Width;
-//
-//		    String titleString = WordUtils.wrap(this.titol, col2Width);
-//
-//		    sb.append(String.format("%-" + col1Width + "s| %-" + col1Width + "s| %-" + col1Width + "s|\n", dateString, authorString, ratingsString));
-//		    sb.append(String.format("%-" + col1Width + "s| %-" + col2Width + "s|\n", "", titleString));
-//
-//		    for (String line : WordUtils.wrap(this.text, width - ident).split("\n")) {
-//		        sb.append(String.format("%-" + col1Width + "s| %-" + col2Width + "s|\n", "", line));
-//		    }
-//
-//		    return sb.toString();
-			return null;
-		}
+    protected void setComentaris(Deque<Comentari> comentaris) {
+        this.comentaris = comentaris;
+    }
 
-		@Override
-		public int compareTo(Entrada o) {
-			// TODO Auto-generated method stub
-			return 0;
+    public void afegirComentari(Usuari usuari, String text, int valoracio) throws Exception {
+        if (usuari != null && text != null) {
+            Comentari comentari = new Comentari(usuari, text, valoracio);
+            comentaris.push(comentari);
+        }
+    }
+
+    public String valoracioMitjaEntrada() {
+        if (comentaris.isEmpty()) {
+            return NOT_PROVIDED;
+        }
+        double sum = 0;
+        for (Comentari comentari : comentaris) {
+            sum += comentari.getValoracio();
+        }
+        double average = sum / comentaris.size();
+        return String.format("%.1f", average);
+    }
+
+    public int totalValoracionsPerValor(int valor) {
+        int count = 0;
+        for (Comentari comentari : comentaris) {
+            if (comentari.getValoracio() == valor) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+
+    @Override
+    public int compareTo(Entrada e) {
+        if (formatter(data).compareTo(formatter(e.getData())) == 0) {
+            return this.titol.compareTo(e.getTitol());
+        }
+
+        return this.data.compareTo(e.getData());
+    }
+    
+    private Calendar formatter(Date data) {
+		Calendar calendari = Calendar.getInstance();
+		calendari.setTime(data);
+		calendari.set(Calendar.MILLISECOND,0);
+		calendari.set(Calendar.MINUTE,0);
+		calendari.set(Calendar.HOUR_OF_DAY,0);
+		return calendari;
+	}
+    
+    @Override
+	public int hashCode() {
+		return Objects.hash(data, titol);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
 		}
-		
-		
-		
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		Entrada other = (Entrada) obj;
+		return Objects.equals(data, other.data) && Objects.equals(titol, other.titol);
+	}
+
+	@Override
+	public String imprimirPublicacio(int ident, int width) {
+		 SimpleDateFormat sdf = new SimpleDateFormat("MMMM yyyy");
+	        String date = sdf.format(data);
+	        String textWrapped = WordUtils.wrap(text, width);
+	        String[] textSplitted = textWrapped.split("\n");
+
+	        StringBuilder result = new StringBuilder();
+
+	        result.append(StringUtils.rightPad(date.toUpperCase(), Blog.AMPLE_LEFT));
+	        result.append(SEPARADOR);
+	        result.append(StringUtils.center(titol, Blog.AMPLE_CONTENT));
+	        result.append(System.lineSeparator());
+	        result.append(StringUtils.leftPad(usuari.getNick() + " " + usuari.nivellUsuari(), Blog.AMPLE_LEFT));
+	        result.append(SEPARADOR);
+	        result.append(StringUtils.center(StringUtils.repeat("-", titol.length()), Blog.AMPLE_CONTENT));
+	        result.append(System.lineSeparator());
+	        result.append(StringUtils.repeat(" ", Blog.AMPLE_LEFT));
+	        result.append(SEPARADOR);
+	        result.append(StringUtils.repeat(" ", Blog.AMPLE_CONTENT));
+	        result.append(System.lineSeparator());
+
+	        for (int i = 0; i < textSplitted.length; i++) {
+	            if (i <= 3) {
+	                result.append(StringUtils.rightPad(Comentari.getTextValoracio(i) + " : " + totalValoracionsPerValor(i), Blog.AMPLE_LEFT));
+	            } else if (i == 4) {
+	                result.append(StringUtils.rightPad("Mitjana : " + valoracioMitjaEntrada(), Blog.AMPLE_LEFT));
+	            } else {
+	                result.append(StringUtils.repeat(" ", Blog.AMPLE_LEFT));
+	            }
+	            result.append(SEPARADOR);
+	            result.append(textSplitted[i]);
+	            result.append(System.lineSeparator());
+	        }
+
+	        result.append(StringUtils.repeat(" ", Blog.AMPLE_LEFT));
+	        result.append(SEPARADOR);
+	        result.append(StringUtils.repeat(" ", Blog.AMPLE_CONTENT));
+	        result.append(System.lineSeparator());
+
+	        Iterator<Comentari> iter = comentaris.iterator();
+	        while (iter.hasNext()) {
+	            Comentari c = iter.next();
+	            result.append(c.imprimirPublicacio(" ", Blog.AMPLE_CONTENT));
+	        }
+
+	        return result.toString();
+	}
+
+	
 }

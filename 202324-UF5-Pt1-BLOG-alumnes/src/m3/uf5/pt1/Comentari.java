@@ -1,11 +1,18 @@
 package m3.uf5.pt1;
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.TreeMap;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.WordUtils;
 
-public class Comentari extends Publicacio{
+public class Comentari extends Publicacio implements Serializable{
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	public static final int IDENT_COMMENT = 5;
 	public static final int IDENT_INC = 2;
 	protected static Map<Integer, String> valoracions = new TreeMap<>();
@@ -17,7 +24,11 @@ public class Comentari extends Publicacio{
 	}
 	private int valoracio;
 	
-	public Comentari(Usuari usuari, String text, int valoracio) {
+	
+	public Comentari() {
+	}
+
+	public Comentari(Usuari usuari, String text, int valoracio) throws Exception {
 		super(usuari, text);
 		this.setValoracio(valoracio);
 	}
@@ -49,25 +60,24 @@ public class Comentari extends Publicacio{
 	    return null;
 	}
 
-	
+
 	@Override
 	public String imprimirPublicacio(int ident, int width) {
-	    StringBuilder sb = new StringBuilder();
-	    String indent = " ".repeat(ident);
-	    String text = WordUtils.wrap(this.Text, width);
-	    String[] lines = text.split("\n");
-	    for (int i = 0; i < lines.length; i++) {
-	        sb.append(indent);
-	        if (i == 0) {
-	            sb.append("| ");
-	        } else {
-	            sb.append("  ");
-	        }
-	        sb.append(lines[i]);
-	        sb.append("\n");
+		String date = data.toString();
+	    String textWrapped = WordUtils.wrap(text, Blog.AMPLE_CONTENT);
+	    String[] textSplitted = textWrapped.split("\n");
+
+	    StringBuilder result = new StringBuilder();
+	    for (int i = 0; i < textSplitted.length; i++) {
+	        result.append(StringUtils.repeat(" ", Blog.AMPLE_LEFT));
+	        result.append(Entrada.SEPARADOR);
+	        result.append(textSplitted[i]);
+	        result.append(System.lineSeparator());
 	    }
-	    return sb.toString();
+
+	    return result.toString();
 	}
+
 
 	
 

@@ -1,11 +1,14 @@
 package m3.uf5.pt1;
 
-import java.util.ArrayList;
+
+import java.util.Calendar;
 import java.util.Date;	
 import java.util.HashSet;
-import java.util.Optional;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.TreeSet;
+
+import org.apache.commons.lang3.StringUtils;
 
 public class Blog {
 
@@ -20,50 +23,71 @@ public class Blog {
 
 	public Entrada cercarEntradaPerDataTitol(Date data, String titol) {
 		for (Entrada entrada : entrades) {
-			if (entrada.getData().equals(data) && entrada.getTitol().equals(titol)) {
+			if (formatter(entrada.getData()).compareTo(formatter(data)) == 0 && entrada.getTitol().equals(titol)) {
 				return entrada;
 			}
 		}
 		return null;
 	}
+	
+	private Calendar formatter(Date data) {
+		Calendar calendari = Calendar.getInstance();
+		calendari.setTime(data);
+		calendari.set(Calendar.MILLISECOND,0);
+		calendari.set(Calendar.MINUTE,0);
+		calendari.set(Calendar.HOUR_OF_DAY,0);
+		return calendari;
+	}
 
 	public Usuari cercarUsuariPerMail(String mail) {
-		Optional<Usuari> usuariOptional = usuaris.stream().filter(u -> u.getMail().equals(mail)).findFirst();
-		return usuariOptional.orElse(null);
+		Iterator iter = usuaris.iterator();
+		while (iter.hasNext()) {
+			Usuari u = (Usuari) iter.next();
+			if (u.getMail().equals(mail)) {
+				return u;
+			}
+		}
+		return null;
 	}
 
-	public Usuari cercarUsuariPerNick(String nick) {
-		Optional<Usuari> usuariOptional = usuaris.stream().filter(u -> u.getNick().equals(nick)).findFirst();
-		return usuariOptional.orElse(null);
+	public Usuari cercarUsuariPerNick(String mail) {
+		Iterator iter = usuaris.iterator();
+		while (iter.hasNext()) {
+			Usuari u = (Usuari) iter.next();
+			if (u.getNick().equals(mail)) {
+				return u;
+			}
+		}
+		return null;
 	}
 
-	public void nouUsuari(String nick, String mail) {
-		if (usuaris.stream().anyMatch(u -> u.getMail().equals(mail) || u.getNick().equals(nick))) {
+	public void nouUsuari(String nick, String mail) throws Exception {
+		if (cercarUsuariPerMail(mail) != null && cercarUsuariPerNick(nick) != null) {
 			throw new IllegalArgumentException("Ja existeix un usuari amb aquest e-mail o nick.");
 		}
-		Usuari usuari = new Usuari(nick, mail);
-		usuaris.add(usuari);
+
+		usuaris.add(new Usuari(nick, mail));
 	}
 
-	public void afegirEntrada(String mail, String text, String titol) {
-		Usuari usuari = cercarUsuariPerMail(mail);
-		if (usuari == null) {
-			throw new IllegalArgumentException("No existeix cap usuari amb aquest e-mail.");
+	public void afegirEntrada(String mail,  String titol, String text) throws Exception {
+		Entrada entradaRepetida = cercarEntradaPerDataTitol(new Date(), titol);
+		if(entradaRepetida == null) {
+			Usuari user = cercarUsuariPerMail(mail);
+			if(user == null) {
+				throw new Exception("No hi ha cap usuari amb aquest mail");
+			}
+
+			Entrada novaEntrada = new Entrada(user, titol, text);
+			entrades.add(novaEntrada);
+			for(Usuari usuari : usuaris) {
+				if (usuari.equals(user)) {
+					usuari.afegirPublicacio(novaEntrada);
+				}
+			}
+		}else {
+			throw new Exception("Ja existeix aquesta entrada");
 		}
 
-		Date currentDate = new Date();
-		Entrada entrada = new Entrada(usuari, text, titol);
-		Entrada existingEntrada = entrades.stream()
-				.filter(e -> e.getData().equals(currentDate) && e.getTitol().equals(titol))
-				.findFirst()
-				.orElse(null);
-		if (existingEntrada != null) {
-			throw new IllegalArgumentException("Ja existeix una entrada amb aquest títol per la data d'avui.");
-		}
-
-		entrada.setData(currentDate);
-		entrades.add(entrada);
-		
 	}
 
 	public String imprimirEntrada(Date data, String titol) {
@@ -71,19 +95,34 @@ public class Blog {
 		if (entrada == null) {
 			throw new IllegalArgumentException("No existeix cap entrada amb aquest títol per la data indicada.");
 		}
-
 		return entrada.imprimirPublicacio(0, AMPLE_CONTENT);
 	}
 
-
 	public void comentarEntrada(String mail, Date data, String titol, String text, int valoracion) throws Exception {
-		if(cercarEntradaPerDataTitol(data, titol) == null){
-			throw new Exception("No existeix cap entrada");
-		}
-		
-		Usuari usuari = cercarUsuariPerMail(mail);
-		usuari.afegirPublicacio(new Comentari(usuari, text, valoracion));
-	}
+		Entrada entradaRepetida = cercarEntradaPerDataTitol(data, titol);
+
+        if (entradaRepetida != null) {
+            Usuari usuariEscriptor = cercarUsuariPerMail(mail);
+
+            if (usuariEscriptor == null) {
+                throw new Exception("No hi ha cap usuari amb aquest mail");
+            }
+
+            for (Entrada entrada : entrades) {
+                if (entrada.compareTo(entradaRepetida) == 0) {
+                    entrada.afegirComentari(usuariEscriptor, text, valoracion);
+                }
+            }
+
+            for (Usuari usuari : usuaris) {
+                if (usuari.equals(usuariEscriptor)) {
+                    usuari.afegirPublicacio(new Comentari(usuari, text, valoracion));
+                }
+            }
+        } else {
+            throw new Exception("No hi ha cap entrada per poder comentar.");
+        }
+	}	
 
 	public void desarDadesBlog(String blogFilename) {
 		// TODO Auto-generated method stubs
@@ -91,7 +130,15 @@ public class Blog {
 	}
 
 	public String imprimirBlog() {
-		return null;
+		String result = "";
+		result += StringUtils.repeat("^", AMPLE_CONTENT + GAP + AMPLE_LEFT);
+		result += System.lineSeparator();
+		Iterator iter = entrades.iterator();
+		while (iter.hasNext()) {
+			Entrada e = (Entrada) iter.next();
+			result += imprimirEntrada(e.getData(), e.getTitol());
+		}
+		return result;
 	}
 
 

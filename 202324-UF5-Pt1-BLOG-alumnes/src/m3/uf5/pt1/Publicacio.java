@@ -1,17 +1,32 @@
 package m3.uf5.pt1;
 
+import java.io.Serializable;
 import java.util.Date;
 
-public abstract class Publicacio {
+public abstract class Publicacio implements Serializable {
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	protected Usuari usuari;
-	protected String Text;
+	protected String text;
 	protected Date data;
 	
-	public Publicacio(Usuari usuari, String text) {
+	public Publicacio() {
+	}
+	
+	public Publicacio(Usuari usuari, String text) throws Exception {
 		super();
+		if (usuari == null) {
+			throw new Exception("Cal indicar usuari");
+		}
+		if (text == null || "".equals(text)) {
+			throw new Exception("Cal escriure text");
+		}
 		this.usuari = usuari;
-		Text = text;
+		this.text = text;
+		data = new Date();
 	}
 
 	public abstract String imprimirPublicacio(int ident, int width);
@@ -25,11 +40,11 @@ public abstract class Publicacio {
 	}
 
 	public String getText() {
-		return Text;
+		return text;
 	}
 
 	public void setText(String text) {
-		Text = text;
+		this.text = text;
 	}
 
 	public Date getData() {
@@ -38,5 +53,10 @@ public abstract class Publicacio {
 
 	public void setData(Date data) {
 		this.data = data;
+	}
+
+	public String imprimirPublicacio(String ident, int width) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }
